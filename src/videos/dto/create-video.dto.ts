@@ -4,17 +4,19 @@ import {
   IsDateString,
   IsInt,
   Min,
+  IsDate,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateVideoDto {
-  @ApiProperty({
-    description: 'Unique identifier for the video',
-    example: 'video_001',
-  })
-  @IsString()
-  @IsNotEmpty()
-  id: string;
+  // @ApiProperty({
+  //   description: 'Unique identifier for the video',
+  //   example: 'video_001',
+  // })
+  // @IsString()
+  // @IsNotEmpty()
+  // id: string;
 
   @ApiProperty({
     description: 'Name or title of the video',
@@ -36,8 +38,9 @@ export class CreateVideoDto {
     description: 'Date the video was posted',
     example: '2024-01-15',
   })
-  @IsDateString()
-  post_date: string;
+  @IsDate()
+  @Type(() => Date)
+  post_date: Date;
 
   @ApiProperty({ description: 'Number of views', example: 1250 })
   @IsInt()
