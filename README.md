@@ -63,21 +63,6 @@ Before you begin, ensure you have the following installed:
 3.  Map this login to a user in the `VideoRecordsDB` database and grant it `db_owner` permissions (for `synchronize: true` to work in development).
 4.  Create a `.env` file in the root of the project with the following content:
 
-```env
-# Database Configuration
-DB_HOST=DAVTXN0003
-DB_INSTANCE=SQLEXPRESS01 # Remove if using default SQL Server instance, e.g., MSSQLSERVER
-DB_PORT=1435             # Use 1433 for default instance, or your configured port for SQLEXPRESS01
-DB_USERNAME=video-manager
-DB_PASSWORD=123
-DB_DATABASE=VideoRecordsDB
-DB_ENCRYPT=true
-DB_TRUST_CERT=true
-
-# App Configuration
-NODE_ENV=development
-PORT=3000
-```
 _Adjust `DB_INSTANCE` and `DB_PORT` based on which SQL Server instance you are targeting and its configuration._
 
 ### Installation
