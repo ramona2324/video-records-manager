@@ -1,14 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { Video } from './entities/video.entity';
+import { QueryVideoDto } from './dto/query-video.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
-import { QueryVideoDto } from './dto/query-video.dto';
 
 @Injectable()
 export class VideosService {
@@ -17,130 +13,148 @@ export class VideosService {
     private videosRepository: Repository<Video>,
   ) {}
 
-  async create(createVideoDto: CreateVideoDto): Promise<Video> {
-    const existingVideo = await this.videosRepository.findOne({
-      where: { id: createVideoDto.id },
-    });
-
-    if (existingVideo) {
-      throw new ConflictException('Video with this ID already exists');
+  async findAll(query: QueryVideoDto): Promise<Video[]> {
+    const orderOptions = {};
+    if (query.sort_by && query.order) {
+      let orderByColumn: string;
+      switch (query.sort_by) {
+        case 'name':
+          orderByColumn = 'name';
+          break;
+        case 'post_date':
+          orderByColumn = 'post_date';
+          break;
+        case 'views_count':
+          orderByColumn = 'views_count';
+          break;
+        default:
+          orderByColumn = 'id'
+      }
+      orderOptions[orderByColumn] = query.order.toUpperCase();
     }
-
-    const video = this.videosRepository.create({
-      ...createVideoDto,
-      post_date: new Date(createVideoDto.post_date),
+    return this.videosRepository.find({
+      order: Object.keys(orderOptions).length > 0 ? orderOptions : undefined,
     });
-
-    return this.videosRepository.save(video);
   }
 
-  async findAll(queryDto: QueryVideoDto): Promise<Video[]> {
-    const query = this.videosRepository.createQueryBuilder('video');
-
-    if (queryDto.sort_by) {
-      const order = queryDto.order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-      query.orderBy(`video.${queryDto.sort_by}`, order);
-    }
-
-    return query.getMany();
-  }
-
-  async findOne(id: string): Promise<Video> {
-    const video = await this.videosRepository.findOne({ where: { id } });
+  async findOne(id: number): Promise<Video> {
+    const video = await this.videosRepository.findOne({ 
+      where: { id }
+    });
+    
     if (!video) {
       throw new NotFoundException(`Video with ID ${id} not found`);
     }
+    
     return video;
   }
 
-  async update(id: string, updateVideoDto: UpdateVideoDto): Promise<Video> {
-    const video = await this.findOne(id);
+  async create(videoData: CreateVideoDto): Promise<Video> {
+    try {
+      const video = this.videosRepository.create(videoData);
+      return await this.videosRepository.save(video);
+    } catch (error) {
+      // Check if the error is a TypeORM QueryFailedError
+      if (error instanceof QueryFailedError) {
+        // SQL Server error codes for unique constraint violations are typically 2627 or 2601
+        // The error.driverError.number holds the SQL Server error code
+        if (error.driverError && (error.driverError.number === 2627 || error.driverError.number === 2601)) {
+          throw new ConflictException('A video with this URL (href) already exists.');
+        }
+      }
+      // Re-throw any other errors that are not unique constraint violtions
+      throw error;
+    }
+  }
 
-    Object.assign(video, {
-      ...updateVideoDto,
-      post_date: new Date(updateVideoDto.post_date),
+  async update(id: number, videoData: UpdateVideoDto): Promise<Video> {
+    const video = await this.videosRepository.findOne({
+      where: { id },
     });
 
-    return this.videosRepository.save(video);
+    if (!video) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
+    }
+
+    try {
+      Object.assign(video, videoData);
+      return await this.videosRepository.save(video);
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        if (error.driverError && (error.driverError.number === 2627 || error.driverError.number === 2601)) {
+          throw new ConflictException('A video with this URL (href) already exists.');
+        }
+      }
+      throw error;
+    }
   }
 
-  async remove(id: string): Promise<void> {
-    const video = await this.findOne(id);
-    await this.videosRepository.remove(video);
+  async remove(id: number): Promise<void> {
+    const result = await this.videosRepository.delete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
+    }
   }
 
-  async seedSampleData(): Promise<void> {
-    const sampleVideos = [
+  async seed(): Promise<Video[]> {
+    await this.videosRepository.clear(); // careful with this in production as this clear existing data for repeatable seeding
+
+    const sampleVideos: Omit<CreateVideoDto, 'id'>[] = [
       {
-        id: 'video_001',
-        name: 'Introduction to NestJS',
-        href: 'https://youtube.com/watch?v=example1',
-        post_date: '2024-01-15',
-        views_count: 1250,
+        name: 'Spongebob unreleased episode',
+        href: 'https://example.com/videos/spongebob-unreleased-episode',
+        post_date: new Date('2024-01-15'),
+        views_count: 15000,
       },
       {
-        id: 'video_002',
-        name: 'TypeORM Basics',
-        href: 'https://youtube.com/watch?v=example2',
-        post_date: '2024-01-20',
-        views_count: 890,
+        name: 'Jake And The Neverland Pirates',
+        href: 'https://example.com/videos/jake-and-the-neverland-pirates',
+        post_date: new Date('2023-02-20'),
+        views_count: 22000,
       },
       {
-        id: 'video_003',
-        name: 'Building REST APIs',
-        href: 'https://youtube.com/watch?v=example3',
-        post_date: '2024-02-01',
-        views_count: 2100,
+        name: 'Igcognito with Vhong Navarro',
+        href: 'https://example.com/videos/incognito-with-vhong-navarro',
+        post_date: new Date('2023-03-15'),
+        views_count: 8500,
       },
       {
-        id: 'video_004',
-        name: 'Database Integration',
-        href: 'https://youtube.com/watch?v=example4',
-        post_date: '2024-02-10',
-        views_count: 1580,
+        name: 'Daig Kayo ng Lola Ko',
+        href: 'https://example.com/videos/daig-kayo-ng-lola-ko',
+        post_date: new Date('2023-04-01'),
+        views_count: 19000,
       },
       {
-        id: 'video_005',
-        name: 'Authentication & Security',
-        href: 'https://youtube.com/watch?v=example5',
-        post_date: '2024-02-15',
-        views_count: 3200,
+        name: 'Deployment Strategies for NestJS Apps',
+        href: 'https://example.com/videos/deployment',
+        post_date: new Date('2023-06-12'),
+        views_count: 12000,
       },
       {
-        id: 'video_006',
-        name: 'Testing Strategies',
-        href: 'https://youtube.com/watch?v=example6',
-        post_date: '2024-02-20',
-        views_count: 950,
-      },
-      {
-        id: 'video_007',
-        name: 'Deployment Guide',
-        href: 'https://youtube.com/watch?v=example7',
-        post_date: '2024-02-25',
-        views_count: 1750,
-      },
-      {
-        id: 'video_008',
-        name: 'Performance Optimization',
-        href: 'https://youtube.com/watch?v=example8',
-        post_date: '2024-03-01',
-        views_count: 2800,
+        name: 'Unit Testing NestJS Applications',
+        href: 'https://example.com/videos/unit-testing',
+        post_date: new Date('2023-07-25'),
+        views_count: 17500,
       },
     ];
-
+    
+    const createdVideos: Video[] = [];
     for (const videoData of sampleVideos) {
-      const existingVideo = await this.videosRepository.findOne({
-        where: { id: videoData.id },
-      });
-
-      if (!existingVideo) {
-        const video = this.videosRepository.create({
-          ...videoData,
-          post_date: new Date(videoData.post_date),
-        });
-        await this.videosRepository.save(video);
+      try {
+        const video = this.videosRepository.create(videoData);
+        createdVideos.push(await this.videosRepository.save(video));
+      } catch (error) {
+        if (error instanceof QueryFailedError) {
+          if (error.driverError && (error.driverError.number === 2627 || error.driverError.number === 2601)) {
+            console.warn(`Skipping seeding of duplicate video (href: ${videoData.href}).`);
+            continue
+          }
+        }
+        throw error;
       }
     }
+
+    return createdVideos;
   }
 }
