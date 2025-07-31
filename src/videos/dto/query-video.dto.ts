@@ -4,11 +4,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 export class QueryVideoDto {
   @ApiPropertyOptional({
     description: 'Sort by field',
-    enum: ['name', 'post_date', 'views_count'],
-    example: 'post_date',
+    enum: ['name', 'date_posted', 'views_count'],
+    example: 'date_posted',
   })
   @IsOptional()
-  @IsIn(['name', 'post_date', 'views_count'])
+  @IsIn(['name', 'date_posted', 'views_count'])
   sort_by?: string;
 
   @ApiPropertyOptional({
