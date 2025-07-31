@@ -1,98 +1,258 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Video Records RESTful API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This project implements a simple RESTful API for managing video records, built with NestJS and utilizing Microsoft SQL Server (MSSQL) for data persistence via TypeORM. It also integrates Swagger for comprehensive API documentation and interactive testing.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Table of Contents
 
-## Description
+- [Features](#features)
+- [Requirements](#requirements)
+- [Setup and Run Instructions](#setup-and-run-instructions)
+  - [Prerequisites](#prerequisites)
+  - [Database Configuration](#database-configuration)
+  - [Installation](#installation)
+  - [Running the Application](#running-the-application)
+-   [API Endpoints](#api-endpoints)
+  -   [1. Add a New Video Record](#1-add-a-new-video-record)
+  -   [2. Delete a Video Record by ID](#2-delete-a-video-record-by-id)
+  -   [3. Update a Video Record by ID](#3-update-a-video-record-by-id)
+  -   [4. Get All Video Records (with Optional Sorting)](#4-get-all-video-records-with-optional-sorting)
+  -   [5. Seed Database (Development Only)](#5-seed-database-development-only)
+-   [Swagger Documentation](#swagger-documentation)
+-   [Database Schema](#database-schema)
+-   [Sample Records](#sample-records)
+-   [Error Handling](#error-handling)
+-   [Evaluation Criteria](#evaluation-criteria)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## Features
 
-```bash
-$ npm install
+-   Create, Retrieve, Update, and Delete (CRUD) operations for video records.
+-   Support for sorting video records by various criteria (`name`, `post_date`, `views_count`) and order (`asc`, `desc`).
+-   Data persistence using TypeORM with Microsoft SQL Server.
+-   Comprehensive API documentation via Swagger UI.
+-   Validation for all incoming request payloads.
+
+## Requirements
+
+The API supports the following features as per the task:
+-   Add a new video record
+-   Delete a video record by ID
+-   Update an existing video record
+-   Get all video records, with support for sorting (by `name`, `post_date`, `views_count` and `asc`/`desc` order).
+
+## Setup and Run Instructions
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+-   [Node.js](https://nodejs.org/en/download/) (LTS version recommended)
+-   [npm](https://www.npmjs.com/get-npm) (comes with Node.js) or [Yarn](https://yarnpkg.com/getting-started/install)
+-   **Microsoft SQL Server Instance**:
+    -   Ensure you have an accessible MSSQL Server instance (e.g., `DAVTXN0003\SQLEXPRESS01`).
+    -   **Authentication Mode:** Must be configured for "SQL Server and Windows Authentication mode" (Mixed Mode).
+    -   **Network Protocols:** TCP/IP must be enabled for your instance.
+    -   **SQL Server Browser Service:** Must be running (essential for named instances).
+    -   **Firewall:** Ensure your SQL Server machine's firewall allows inbound connections on the configured port (e.g., `1435` for `SQLEXPRESS01`, or `1433` for a default instance).
+
+### Database Configuration
+
+1.  Create a database named `VideoRecordsDB` on your SQL Server instance (`DAVTXN0003\SQLEXPRESS01` or `DAVTXN0003` if using default instance).
+2.  Create a SQL Server login (e.g., `video-manager`) with a password (e.g., `123`).
+3.  Map this login to a user in the `VideoRecordsDB` database and grant it `db_owner` permissions (for `synchronize: true` to work in development).
+4.  Create a `.env` file in the root of the project with the following content:
+
+```env
+# Database Configuration
+DB_HOST=DAVTXN0003
+DB_INSTANCE=SQLEXPRESS01 # Remove if using default SQL Server instance, e.g., MSSQLSERVER
+DB_PORT=1435             # Use 1433 for default instance, or your configured port for SQLEXPRESS01
+DB_USERNAME=video-manager
+DB_PASSWORD=123
+DB_DATABASE=VideoRecordsDB
+DB_ENCRYPT=true
+DB_TRUST_CERT=true
+
+# App Configuration
+NODE_ENV=development
+PORT=3000
 ```
+_Adjust `DB_INSTANCE` and `DB_PORT` based on which SQL Server instance you are targeting and its configuration._
 
-## Compile and run the project
+### Installation
 
-```bash
-# development
-$ npm run start
+1.  Clone this repository:
+    ```bash
+    git clone <your-repository-url>
+    cd video-records-api
+    ```
+2.  Install the dependencies:
+    ```bash
+    npm install
+    # or yarn install
+    ```
 
-# watch mode
-$ npm run start:dev
+### Running the Application
 
-# production mode
-$ npm run start:prod
-```
+1.  Start the application in development mode:
+    ```bash
+    npm run start:dev
+    # or yarn start:dev
+    ```
+    The application will typically run on `http://localhost:3000`.
 
-## Run tests
+2.  Access the Swagger API documentation at:
+    ```
+    http://localhost:3000/api
+    ```
 
-```bash
-# unit tests
-$ npm run test
+## API Endpoints
 
-# e2e tests
-$ npm run test:e2e
+The API is accessible at `http://localhost:3000/videos`. All requests and responses are in JSON format.
 
-# test coverage
-$ npm run test:cov
-```
+### 1. Add a New Video Record
 
-## Deployment
+-   **Endpoint:** `POST /videos/`
+-   **Description:** Creates a new video entry.
+-   **Request Body (`application/json`):**
+    ```json
+    {
+        "id": "unique_video_id_001",
+        "name": "Introduction to NestJS",
+        "href": "[http://example.com/videos/nestjs-intro](http://example.com/videos/nestjs-intro)",
+        "date_posted": "2024-01-15",
+        "views_count": 1250
+    }
+    ```
+-   **Validations:**
+    -   `id` must be unique.
+    -   All fields (`id`, `name`, `href`, `date_posted`, `views_count`) are required and must be valid according to their types.
+-   **Success Response (201 Created):**
+    ```json
+    {
+        "id": "unique_video_id_001",
+        "name": "Introduction to NestJS",
+        "href": "[http://example.com/videos/nestjs-intro](http://example.com/videos/nestjs-intro)",
+        "post_date": "2024-01-15T00:00:00.000Z",
+        "views_count": 1250
+    }
+    ```
+-   **Error Responses (400 Bad Request, 409 Conflict):**
+    -   `400` if validation fails (e.g., missing required fields, invalid types).
+    -   `409` if `id` is not unique (if `id` is client-provided).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### 2. Delete a Video Record by ID
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+-   **Endpoint:** `DELETE /videos/{id}/`
+-   **Description:** Deletes a video by its unique id.
+-   **Path Parameters:**
+    -   `id`: The unique identifier of the video (e.g., `unique_video_id_001`).
+-   **Validations:**
+    -   The video must exist.
+-   **Success Response (204 No Content):** (Empty response body)
+-   **Error Response (404 Not Found):**
+    -   `404` if the video with the specified ID does not exist.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+### 3. Update a Video Record by ID
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+-   **Endpoint:** `PUT /videos/{id}/`
+-   **Description:** Updates an existing video entry by its id.
+-   **Path Parameters:**
+    -   `id`: The unique identifier of the video to update (e.g., `unique_video_id_001`).
+-   **Request Body (`application/json`):**
+    ```json
+    {
+        "name": "Updated NestJS Introduction",
+        "href": "[http://example.com/videos/updated-nestjs](http://example.com/videos/updated-nestjs)",
+        "date_posted": "2024-01-20",
+        "views_count": 1300
+    }
+    ```
+-   **Validations:**
+    -   The video must exist.
+    -   All fields must be provided and valid (as defined in `UpdateVideoDto`).
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "id": "unique_video_id_001",
+        "name": "Updated NestJS Introduction",
+        "href": "[http://example.com/videos/updated-nestjs](http://example.com/videos/updated-nestjs)",
+        "post_date": "2024-01-20T00:00:00.000Z",
+        "views_count": 1300
+    }
+    ```
+-   **Error Responses (400 Bad Request, 404 Not Found):**
+    -   `400` if validation fails.
+    -   `404` if the video with the specified ID does not exist.
 
-## Resources
+### 4. Get All Video Records (with Optional Sorting)
 
-Check out a few resources that may come in handy when working with NestJS:
+-   **Endpoint:** `GET /videos/`
+-   **Description:** Retrieves all video records, optionally sorted.
+-   **Query Parameters:**
+    -   `sort_by` (Optional): Field to sort by. Must be one of `name`, `date_posted`, or `views_count`.
+        -   Example: `GET /videos?sort_by=date_posted`
+    -   `order` (Optional): Sort order. Must be `asc` or `desc`. Only applies if `sort_by` is provided.
+        -   Example: `GET /videos?sort_by=views_count&order=desc`
+-   **Success Response (200 OK):**
+    ```json
+    [
+        {
+            "id": "unique_video_id_001",
+            "name": "Introduction to NestJS",
+            "href": "[http://example.com/videos/nestjs-intro](http://example.com/videos/nestjs-intro)",
+            "post_date": "2024-01-15T00:00:00.000Z",
+            "views_count": 1250
+        },
+        // ... more video records
+    ]
+    ```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 5. Seed Database (Development Only)
 
-## Support
+-   **Endpoint:** `POST /videos/seed`
+-   **Description:** Populates the `Videos` table with sample data. This endpoint is primarily for development and testing. It will clear existing data before inserting new samples.
+-   **Request Body:** (Empty)
+-   **Success Response (201 Created):** Returns an array of the newly seeded video records.
+-   **Error Responses (500 Internal Server Error, 409 Conflict):**
+    -   `500` if an unexpected error occurs during seeding.
+    -   `409` if attempting to seed with duplicate IDs (if `id` is client-provided and you run it multiple times without clearing).
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Swagger Documentation
 
-## Stay in touch
+Access the interactive API documentation and testing interface at:
+`http://localhost:3000/api`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Database Schema
 
-## License
+The `Videos` table is created by TypeORM (when `synchronize: true`) with the following structure:
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+-   `id`: `NVARCHAR(255)`, Primary Key (Client-provided string)
+-   `name`: `NVARCHAR(255)`, NOT NULL
+-   `href`: `NVARCHAR(500)`, NOT NULL
+-   `post_date`: `DATE`, NOT NULL
+-   `views_count`: `INT`, NOT NULL, default `0`
+
+## Sample Records
+
+Upon successful execution of the `POST /videos/seed` endpoint, 5-10 sample records will be inserted into the `Videos` table for testing purposes.
+
+## Error Handling
+
+The API handles various error conditions gracefully, providing appropriate HTTP status codes and error messages for:
+-   Validation failures (400 Bad Request)
+-   Resource not found (404 Not Found)
+-   Duplicate ID conflicts (409 Conflict - if ID is client-provided)
+-   Internal server errors (500 Internal Server Error)
+
+---
+
+## Evaluation Criteria
+
+This project will be evaluated based on the following:
+
+-   **Code Structure:** Organization, modularity, readability, and adherence to NestJS best practices.
+-   **Functionality:** All specified API endpoints work as expected, including sorting and validation.
+-   **Database Handling:** Data is read and written safely and consistently from/to the database.
+-   **Error Handling:** Edge cases, missing/invalid input, and other errors are handled gracefully with appropriate responses.
