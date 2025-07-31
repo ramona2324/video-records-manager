@@ -1,35 +1,39 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Enable CORS if needed
+  app.enableCors();
 
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  // Enable global validation pipe
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: {
+      enableImplicitConversion: true
+    },
+  }));
 
-  // Swagger configuration
+  // Swagger Setup
   const config = new DocumentBuilder()
-    .setTitle('Video Records API')
-    .setDescription(
-      'A RESTful API for managing video records with MSSQL database',
-    )
-    .setVersion('1.0')
-    .addTag('videos', 'Video management endpoints')
-    .build();
+  .setTitle('Video Records API')
+  .setDescription('API for managing video records, with sorting capabilities.')
+  .setVersion('1.0')
+  .addTag('videos')
+  .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document); // 'api' is the path for Swagger UI
 
-  await app.listen(3000);
-  console.log('Application is running on: http://localhost:3000');
-  console.log('Swagger documentation: http://localhost:3000/api');
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Swagger documentation: http://localhost:${port}/api`)
 }
 bootstrap();
