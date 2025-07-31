@@ -1,25 +1,20 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Unique } from 'typeorm';
 
 @Entity('Videos')
+@Unique(['href'])
 export class Video {
-  @ApiProperty({ description: 'Id for the video' })
-  @PrimaryColumn()
-  id: string;
+  @PrimaryGeneratedColumn('increment') // Explicitly specify increment strategy
+  id: number;
 
-  @ApiProperty({ description: 'Name of title of the video' })
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @ApiProperty({ description: 'URL to the video' })
-  @Column()
+  @Column({ type: 'varchar', length: 500 })
   href: string;
 
-  @ApiProperty({ description: 'Date the video was posted mm/dd/yyyy' })
-  @Column({ type: 'date' })
-  date_posted: Date;
+  @CreateDateColumn({ type: 'datetime2' })
+  post_date: Date;
 
-  @ApiProperty({ description: 'Number of views the video has received' })
-  @Column({ type: 'int' })
-  views_count: number;
+  @Column({ default: 0 })
+  views_count: number
 }
